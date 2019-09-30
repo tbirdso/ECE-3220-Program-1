@@ -51,7 +51,7 @@ node_t * allocate_node()
 }
 
 // Add a single node to the producer list
-void insert_producer(buffer_t *b, char item)
+node_t *insert_producer(buffer_t *b, char item)
 {
 	//TODO testme
 	node_t *new_prod = allocate_node();
@@ -64,7 +64,7 @@ void insert_producer(buffer_t *b, char item)
 }
 
 // Add a single node to the consumer list
-void insert_consumer(buffer_t *b, char *item_ptr)
+node_t *insert_consumer(buffer_t *b, char *item_ptr)
 {
 	//TODO testme
 	node_t *new_cons = allocate_node();
@@ -99,34 +99,78 @@ void put(buffer_t *b, char item)
 {
   // your code
 	node_t *prod_node;
-	pthread_mutex_lock(&b->mutex);
 
 	// 1. Acquire lock
-	// 2. Check on CV to see if consumer list is non-empty. If so,
+	pthread_mutex_lock(&b->mutex);
+
+	// 2. Check to see if consumer list is non-empty.
+	if(b->consumer_head != NULL) {
 	//	a. Transfer value of item into consumer node
 	//	b. Update consumer node CV
-	// 3. If consumer list is empty
+
+		node_t *cons = remove_consumer(b);
+		item = cons->item;
+		cons->transfer_completed = 1;
+		pthread_cond_signal(&cons->partner_available);
+
+	} else {
 	//	a. insert a new node into the producer list
 	//	b. wait for CV to update where transfer is completed
 	//	c. destroy transfer CV and free node
+
+		node_t *prod = insert_producer(b, item);
+
+		while(prod->transfer_completed = 0) {
+			pthread_cond_wait(&prod->partner_available, &b->mutex);
+		}
+
+		pthread_cond_destroy(&prod->partner_available);
+		free(prod);
+	}
+
 	pthread_mutex_unlock(&b->mutex);
+
+	return;
 }
 
 char get(buffer_t *b)
 {
-  // your code
+	//TODO: testme
 	node_t *cons_node;
-	pthread_mutex_lock(&b->mutex);
+	char item;
+
 	// 1. Acquire lock
-	// 2. Check on CV to see if producer list is non-empty. If so,
-	//	a. Transfer value of item from producer node
+	pthread_mutex_lock(&b->mutex);
+
+	// 2. Check on CV to see if producer list is non-empty.
+	if(b->producer_head != NULL) {
+	//	a. Transfer value of item from producer nodee
 	//	b. Update producer node CV
-	// 3. If producer list is empty
+
+		node_t *prod = remove_producer(b);
+		item = prod->item;
+		prod->transfer_completed = 1;
+		pthread_cond_signal(&prod->partner_available);
+
+	} else {
 	//	a. insert a new node into consumer list
 	//	b. wait for CV to update where transfer is completed
 	//	c. output item value (?)
 	//	d. destroy transfer CV and free node
-	pthread_mutex_unlock(&b->mutex);
+	
+		node_t *cons = insert_consumer(b, &item);
+
+		while(cons->transfer_completed == 0) {
+			pthread_cond_wait(&cons->partner_available, &b->mutex);
+		}
+		
+		pthread_cond_destroy(&cons->partner_available);
+		free(cons);
+	}
+
+ 	pthread_mutex_unlock(&b->mutex);
+
+	return item;
 }
 
 
