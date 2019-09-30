@@ -39,47 +39,57 @@ buffer_t buffer;
 // Dynamically allocate a single node to put in the buffer
 node_t * allocate_node()
 {
+	// Allocate node
 	node_t *node = (node_t *)malloc(1 * sizeof(node_t));
-	// TODO: init CV
+
+	// Initialize node flags
+	// TODO testme
+	pthread_cond_init(&node->partner_available, NULL);
+	node->transfer_completed = 0;
+
 	return node;
 }
 
 // Add a single node to the producer list
-node_t *insert_producer(buffer_t *b, char item)
+void insert_producer(buffer_t *b, char item)
 {
-  // your code
-	//TODO
-	// 3. Traverse list
-	// 4. Create producer node
-	// 5. Insert at tail of list
+	//TODO testme
+	node_t *new_prod = allocate_node();
+
+	node_t *prev_tail = b->producer_tail;
+	prev_tail->next = new_prod;
+	b->producer_tail = new_prod;
+
+	return;
 }
 
 // Add a single node to the consumer list
-node_t *insert_consumer(buffer_t *b, char *item_ptr)
+void insert_consumer(buffer_t *b, char *item_ptr)
 {
-  // your code
+	//TODO testme
+	node_t *new_cons = allocate_node();
 
-	//TODO
-	// 3. Traverse list
-	// 4. Create consumer node
-	// 5. Insert at tail of list
+	node_t *prev_tail = b->consumer_tail;
+	prev_tail->next = new_cons;
+	b->consumer_tail = new_cons;
+
+	return;
 }
 
 // Get the FIFO producer from the producer list
-void remove_producer(buffer_t *b)
+node_t *remove_producer(buffer_t *b)
 {
-  // your code
-	//TODO
-	// 3. Get a pointer to the first node
-	// 4. Get a pointer to the second node
-	// 5. Set the second node as the head of the list
-	// 6. Return a pointer from the list
+	node_t *prod = b->producer_head;
+	b->producer_head = prod->next;
+	return prod;
 }
 
 // Get the FIFO consumer from the consumer list
-void remove_consumer(buffer_t *b)
+node_t *remove_consumer(buffer_t *b)
 {
-  // your code
+	node_t *cons = b->consumer_head;
+	b->consumer_head = cons->next;
+	return cons;
 }
 
 
