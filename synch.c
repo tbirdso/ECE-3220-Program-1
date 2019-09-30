@@ -139,7 +139,7 @@ void put(buffer_t *b, char item)
 	//	b. Update consumer node CV
 
 		node_t *cons = remove_consumer(b);
-		item = cons->item;
+		cons->item = item;
 		cons->transfer_completed = 1;
 		pthread_cond_signal(&cons->partner_available);
 
@@ -198,6 +198,8 @@ char get(buffer_t *b)
 			pthread_cond_wait(&cons->partner_available, &b->mutex);
 		}
 		
+		item = cons->item;
+
 		pthread_cond_destroy(&cons->partner_available);
 		free(cons);
 	}
