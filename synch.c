@@ -55,40 +55,68 @@ node_t *insert_producer(buffer_t *b, char item)
 {
 	//TODO testme
 	node_t *new_prod = allocate_node();
+	printf("Inserting producer node with %c at %p.\n", item, new_prod);
 
 	node_t *prev_tail = b->producer_tail;
-	prev_tail->next = new_prod;
+	if(prev_tail != NULL) {
+		prev_tail->next = new_prod;
+	} else {
+	// List was empty and now has one node
+		b->producer_head = new_prod;
+	}
 	b->producer_tail = new_prod;
 
-	return;
+	new_prod->item = item;
+	
+	return new_prod;
 }
 
 // Add a single node to the consumer list
 node_t *insert_consumer(buffer_t *b, char *item_ptr)
 {
 	//TODO testme
+	printf("Inserting consumer node\n");
 	node_t *new_cons = allocate_node();
 
 	node_t *prev_tail = b->consumer_tail;
-	prev_tail->next = new_cons;
+	if(prev_tail != NULL) {
+		prev_tail->next = new_cons;
+	} else {
+		//List was empty and now has one node
+		b->consumer_head = new_cons;
+	}
 	b->consumer_tail = new_cons;
 
-	return;
+	return new_cons;
 }
 
 // Get the FIFO producer from the producer list
 node_t *remove_producer(buffer_t *b)
 {
+	printf("Removing producer node.\n");
 	node_t *prod = b->producer_head;
-	b->producer_head = prod->next;
+	if(b->producer_tail == prod) {
+		//List had only one node and is now empty
+		b->producer_tail = NULL;
+		b->producer_head = NULL;
+	} else {
+		b->producer_head = prod->next;
+	}
 	return prod;
 }
 
 // Get the FIFO consumer from the consumer list
 node_t *remove_consumer(buffer_t *b)
 {
+	printf("Removing consumer node.\n");
 	node_t *cons = b->consumer_head;
-	b->consumer_head = cons->next;
+	if(b->consumer_tail == cons) {
+		// List had only one node and is now empty
+		b->consumer_tail = NULL;
+		b->consumer_head = NULL;
+	} else {	
+		b->consumer_head = cons->next;
+	}
 	return cons;
 }
 
@@ -97,11 +125,13 @@ node_t *remove_consumer(buffer_t *b)
 
 void put(buffer_t *b, char item)
 {
-  // your code
 	node_t *prod_node;
+
+	assert(b != NULL);
 
 	// 1. Acquire lock
 	pthread_mutex_lock(&b->mutex);
+	printf("set() acquired lock.\n");
 
 	// 2. Check to see if consumer list is non-empty.
 	if(b->consumer_head != NULL) {
@@ -120,7 +150,7 @@ void put(buffer_t *b, char item)
 
 		node_t *prod = insert_producer(b, item);
 
-		while(prod->transfer_completed = 0) {
+		while(prod->transfer_completed == 0) {
 			pthread_cond_wait(&prod->partner_available, &b->mutex);
 		}
 
@@ -139,8 +169,11 @@ char get(buffer_t *b)
 	node_t *cons_node;
 	char item;
 
+	assert(b != NULL);
+
 	// 1. Acquire lock
 	pthread_mutex_lock(&b->mutex);
+	printf("get() acquired lock.\n");
 
 	// 2. Check on CV to see if producer list is non-empty.
 	if(b->producer_head != NULL) {
@@ -149,6 +182,7 @@ char get(buffer_t *b)
 
 		node_t *prod = remove_producer(b);
 		item = prod->item;
+		printf("get() found item %c at %p.\n", item, prod);
 		prod->transfer_completed = 1;
 		pthread_cond_signal(&prod->partner_available);
 
