@@ -89,7 +89,7 @@ void put(buffer_t *b, char item)
 {
   // your code
 	node_t *prod_node;
-	pthread_mutex_lock(&(buffer.mutex));
+	pthread_mutex_lock(&b->mutex);
 
 	// 1. Acquire lock
 	// 2. Check on CV to see if consumer list is non-empty. If so,
@@ -99,14 +99,14 @@ void put(buffer_t *b, char item)
 	//	a. insert a new node into the producer list
 	//	b. wait for CV to update where transfer is completed
 	//	c. destroy transfer CV and free node
-	pthread_mutex_unlock(&(buffer.mutex));
+	pthread_mutex_unlock(&b->mutex);
 }
 
 char get(buffer_t *b)
 {
   // your code
 	node_t *cons_node;
-	pthread_mutex_lock(&buffer.mutex);
+	pthread_mutex_lock(&b->mutex);
 	// 1. Acquire lock
 	// 2. Check on CV to see if producer list is non-empty. If so,
 	//	a. Transfer value of item from producer node
@@ -116,7 +116,7 @@ char get(buffer_t *b)
 	//	b. wait for CV to update where transfer is completed
 	//	c. output item value (?)
 	//	d. destroy transfer CV and free node
-	pthread_mutex_unlock(&buffer.mutex);
+	pthread_mutex_unlock(&b->mutex);
 }
 
 
