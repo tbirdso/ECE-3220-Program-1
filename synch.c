@@ -43,7 +43,6 @@ node_t * allocate_node()
 	node_t *node = (node_t *)malloc(1 * sizeof(node_t));
 
 	// Initialize node flags
-	// TODO testme
 	pthread_cond_init(&node->partner_available, NULL);
 	node->transfer_completed = 0;
 
@@ -53,9 +52,7 @@ node_t * allocate_node()
 // Add a single node to the producer list
 node_t *insert_producer(buffer_t *b, char item)
 {
-	//TODO testme
 	node_t *new_prod = allocate_node();
-	printf("Inserting producer node with %c at %p.\n", item, new_prod);
 
 	node_t *prev_tail = b->producer_tail;
 	if(prev_tail != NULL) {
@@ -74,7 +71,6 @@ node_t *insert_producer(buffer_t *b, char item)
 // Add a single node to the consumer list
 node_t *insert_consumer(buffer_t *b, char *item_ptr)
 {
-	//TODO testme
 	printf("Inserting consumer node\n");
 	node_t *new_cons = allocate_node();
 
@@ -93,7 +89,6 @@ node_t *insert_consumer(buffer_t *b, char *item_ptr)
 // Get the FIFO producer from the producer list
 node_t *remove_producer(buffer_t *b)
 {
-	printf("Removing producer node.\n");
 	node_t *prod = b->producer_head;
 	if(b->producer_tail == prod) {
 		//List had only one node and is now empty
@@ -108,7 +103,6 @@ node_t *remove_producer(buffer_t *b)
 // Get the FIFO consumer from the consumer list
 node_t *remove_consumer(buffer_t *b)
 {
-	printf("Removing consumer node.\n");
 	node_t *cons = b->consumer_head;
 	if(b->consumer_tail == cons) {
 		// List had only one node and is now empty
@@ -131,7 +125,6 @@ void put(buffer_t *b, char item)
 
 	// 1. Acquire lock
 	pthread_mutex_lock(&b->mutex);
-	printf("set() acquired lock.\n");
 
 	// 2. Check to see if consumer list is non-empty.
 	if(b->consumer_head != NULL) {
@@ -165,7 +158,6 @@ void put(buffer_t *b, char item)
 
 char get(buffer_t *b)
 {
-	//TODO: testme
 	node_t *cons_node;
 	char item;
 
@@ -173,7 +165,6 @@ char get(buffer_t *b)
 
 	// 1. Acquire lock
 	pthread_mutex_lock(&b->mutex);
-	printf("get() acquired lock.\n");
 
 	// 2. Check on CV to see if producer list is non-empty.
 	if(b->producer_head != NULL) {
@@ -182,7 +173,6 @@ char get(buffer_t *b)
 
 		node_t *prod = remove_producer(b);
 		item = prod->item;
-		printf("get() found item %c at %p.\n", item, prod);
 		prod->transfer_completed = 1;
 		pthread_cond_signal(&prod->partner_available);
 
