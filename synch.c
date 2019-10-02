@@ -42,7 +42,7 @@ node_t * allocate_node()
 	// Allocate node
 	node_t *node = (node_t *)malloc(1 * sizeof(node_t));
 
-	// Initialize node flags
+	// Initialize CV and transfer flag
 	pthread_cond_init(&node->partner_available, NULL);
 	node->transfer_completed = 0;
 
@@ -71,8 +71,8 @@ node_t *insert_producer(buffer_t *b, char item)
 // Add a single node to the consumer list
 node_t *insert_consumer(buffer_t *b, char *item_ptr)
 {
-	printf("Inserting consumer node\n");
 	node_t *new_cons = allocate_node();
+	new_cons->item_ptr = item_ptr;
 
 	node_t *prev_tail = b->consumer_tail;
 	if(prev_tail != NULL) {
@@ -119,8 +119,6 @@ node_t *remove_consumer(buffer_t *b)
 
 void put(buffer_t *b, char item)
 {
-	node_t *prod_node;
-
 	assert(b != NULL);
 
 	// 1. Acquire lock
@@ -132,7 +130,7 @@ void put(buffer_t *b, char item)
 	//	b. Update consumer node CV
 
 		node_t *cons = remove_consumer(b);
-		cons->item = item;
+		*(cons->item_ptr) = item;
 		cons->transfer_completed = 1;
 		pthread_cond_signal(&cons->partner_available);
 
@@ -158,7 +156,6 @@ void put(buffer_t *b, char item)
 
 char get(buffer_t *b)
 {
-	node_t *cons_node;
 	char item;
 
 	assert(b != NULL);
@@ -168,7 +165,7 @@ char get(buffer_t *b)
 
 	// 2. Check on CV to see if producer list is non-empty.
 	if(b->producer_head != NULL) {
-	//	a. Transfer value of item from producer nodee
+	//	a. Transfer value of item from producer node
 	//	b. Update producer node CV
 
 		node_t *prod = remove_producer(b);
@@ -179,7 +176,7 @@ char get(buffer_t *b)
 	} else {
 	//	a. insert a new node into consumer list
 	//	b. wait for CV to update where transfer is completed
-	//	c. output item value (?)
+	//	c. update local item value
 	//	d. destroy transfer CV and free node
 	
 		node_t *cons = insert_consumer(b, &item);
@@ -187,8 +184,6 @@ char get(buffer_t *b)
 		while(cons->transfer_completed == 0) {
 			pthread_cond_wait(&cons->partner_available, &b->mutex);
 		}
-		
-		item = cons->item;
 
 		pthread_cond_destroy(&cons->partner_available);
 		free(cons);
